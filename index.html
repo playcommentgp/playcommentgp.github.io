@@ -1,0 +1,99 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Comment GP · Season ranking</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#140c1c;--card:#21152f;--line:#2b1e3c;--gold:#f4d35e;--txt:#f1ecff;--mut:#a89cc0;--green:#7CFC8A}
+*{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--txt);font:22px 'VT323',monospace}
+header{padding:28px 16px 6px;text-align:center} h1{font:22px 'Press Start 2P';color:var(--gold);margin:0 0 10px}
+.sub{color:var(--mut)} main{max-width:620px;margin:auto;padding:0 12px 40px}
+.tabs{display:flex;gap:8px;margin:16px 0} .tabs button{flex:1;font:10px 'Press Start 2P';padding:12px 4px;background:var(--card);color:var(--txt);border:3px solid #3a2a4f;cursor:pointer}
+.tabs button.on{border-color:var(--gold);color:var(--gold)}
+input{width:100%;font:22px 'VT323';padding:10px 12px;background:var(--card);color:var(--txt);border:3px solid #3a2a4f;margin-bottom:10px}
+.row{display:grid;grid-template-columns:34px 40px 1fr auto;gap:8px;align-items:center;padding:8px 4px;border-top:2px solid var(--line)}
+.row .pos{color:var(--mut)} .row.p1 .pos,.row.p1 .nm{color:var(--gold)} .row.p2 .nm{color:#d9d9e3} .row.p3 .nm{color:#e0a46a}
+.nm small{display:block;color:var(--mut);font-size:17px} .pts{text-align:right} .pts b{font:12px 'Press Start 2P'} .pts small{display:block;color:var(--mut);font-size:16px}
+canvas{image-rendering:pixelated;width:40px;height:40px;background:#4b4b55;border-radius:4px}
+h2{font:12px 'Press Start 2P';color:var(--gold);margin:22px 0 8px} .house{color:var(--mut)}
+.car{display:grid;grid-template-columns:72px 1fr;gap:12px;align-items:center;padding:10px 4px;border-top:2px solid var(--line)}
+.car canvas{width:72px;height:72px} .car b{font:11px 'Press Start 2P';color:var(--gold)} .hide{display:none}
+footer{text-align:center;color:var(--mut);margin-top:26px}
+</style></head><body>
+<header><h1>COMMENT GP</h1><div class="sub">Daily soapbox race · Season 1 · @playcommentgp</div></header>
+<main>
+<div class="tabs"><button class="on" data-t="season">SEASON</button><button data-t="gp">GP</button><button data-t="today">LAST DAY</button><button data-t="cars">CARS</button></div>
+<section id="season"><input id="q" placeholder="Find your @"><div id="tb"></div></section>
+<section id="gp" class="hide"></section>
+<section id="today" class="hide"></section>
+<section id="cars" class="hide"><p class="sub">Cars are unlocked by playing. They don't make you faster. They just show everyone how far you've come.</p><div id="cl"></div></section>
+<footer>Every GP: 4 days of heats, then the GRAND FINAL on day 5.<br>The top 10 commenters of each heat make the final.<br>
+Comment on today's video to race in the next heat.<br>Points: 25-18-15-12-10-8-6-4-2-1 for the final top 10, +1 for every finish.</footer>
+</main>
+<script>
+const SKIN_BASE = {soapbox:'#9c6b3c', kart:'#d62828', buggy:'#f77f00', rally:'#f5f5f5', formula:null, gold:'#f4d35e'};
+function drawSkin(ctx, x, y, skin, color, st, sc){
+  sc = sc || 1; if (sc===1){ x|=0; y|=0; }
+  const p = (c,dx,dy,w=1,h=1)=>{ ctx.fillStyle=c; ctx.fillRect(x+dx*sc, y+dy*sc, w*sc, h*sc); };
+  if (st===2){ const b = SKIN_BASE[skin] || color;               // capotado
+    p(b,-4,-3,8,6); p('#333',-5,-4,2,2); p('#333',3,2,2,2); p(color,4,-6,3,3); return; }
+  if (skin==='kart'){
+    p('rgba(0,0,0,.3)',-3,-4,8,12);
+    p('#111',-5,-5,2,3); p('#111',3,-5,2,3); p('#111',-6,2,3,4); p('#111',3,2,3,4);
+    p('#f4d35e',-4,-7,8,1); p('#555',-4,6,8,1);
+    p('#d62828',-2,-6,4,12); p('#9b1c1c',-4,-1,1,4); p('#9b1c1c',3,-1,1,4);
+    p(color,-1,-1,3,3); p('#bde0fe',-1,-1,3,1); p('#444',-1,3,3,2);
+  } else if (skin==='buggy'){
+    p('rgba(0,0,0,.3)',-3,-4,9,13);
+    p('#111',-6,-5,3,4); p('#111',3,-5,3,4); p('#111',-6,3,3,5); p('#111',3,3,3,5);
+    p('#f77f00',-3,-5,6,11); p('#a14f00',-3,3,6,3);
+    p('#222',-3,-3,6,1); p('#222',-3,1,6,1); p('#222',-3,-3,1,5); p('#222',2,-3,1,5);
+    p(color,-1,-2,3,3); p('#fff3b0',-2,-6,4,1); p('#111',-1,6,3,2);
+  } else if (skin==='rally'){
+    p('rgba(0,0,0,.3)',-3,-5,9,14);
+    p('#111',-5,-4,1,3); p('#111',4,-4,1,3); p('#111',-5,3,1,3); p('#111',4,3,1,3);
+    p('#f5f5f5',-4,-6,8,13); p('#7ab8e8',-3,-3,6,2); p('#dcdcdc',-3,-1,6,4); p('#7ab8e8',-3,3,6,1);
+    p(color,-1,-6,2,13); p('#ffe066',-4,-7,2,1); p('#ffe066',2,-7,2,1); p('#333',-4,7,8,1);
+  } else if (skin==='formula' || skin==='gold'){
+    const g = skin==='gold', body = g ? '#f4d35e' : color, wing = g ? '#c99a1e' : '#222', plate = g ? '#fff3b0' : color;
+    p('rgba(0,0,0,.3)',-3,-6,8,15);
+    p(wing,-5,-8,10,1); p(plate,-5,-8,1,2); p(plate,4,-8,1,2);
+    p('#111',-5,-6,2,3); p('#111',3,-6,2,3); p('#111',-6,3,2,4); p('#111',4,3,2,4);
+    p(body,-1,-7,2,5); p(body,-2,-2,4,7); p(body,-3,0,1,4); p(body,2,0,1,4);
+    p('#111',-1,-1,2,2); p(g ? color : '#ffffff',-1,-1,2,1);
+    p(wing,-5,6,10,2); p(plate,-5,6,10,1);
+    if (g){ p('#fff3b0',-2,9,1,1); p('#ffe680',1,11,1,1); p('#fff3b0',-1,13,1,1); }
+  } else {                                                        // soapbox (o carrinho de rolimã inicial)
+    p('rgba(0,0,0,.3)',-3,-3,8,11);
+    p('#222',-5,-4,2,3); p('#222',3,-4,2,3); p('#222',-5,3,2,3); p('#222',3,3,2,3);
+    p('#9c6b3c',-3,-5,6,11); p('#7a5230',-3,1,6,1);
+    p(color,-2,-1,4,4); p('#e0ac7e',-1,-4,3,3); p('#3b2a1a',-1,-4,3,1);
+  }
+}
+
+const D = {"gp": null, "table": [], "today": [], "day": null, "date": null, "cars": [{"id": "soapbox", "name": "SOAPBOX", "rule": "Everyone starts here"}, {"id": "kart", "name": "GO-KART", "rule": "Race on 5 days"}, {"id": "buggy", "name": "DUNE BUGGY", "rule": "Finish on a podium"}, {"id": "rally", "name": "RALLY CAR", "rule": "Race on 15 days"}, {"id": "formula", "name": "FORMULA", "rule": "Win 2 races"}, {"id": "gold", "name": "GOLDEN F1", "rule": "Win 5 races"}]};
+const PAL=['#e63946','#f4a261','#2a9d8f','#e9c46a','#8ecae6','#ff70a6','#70d6ff','#ffd670','#b5e48c','#c77dff'];
+const col = n => PAL[[...n].reduce((a,c)=>a+c.charCodeAt(0),0)%PAL.length];
+function icon(car, name, big){ const c=document.createElement('canvas'); const S=big?24:20; c.width=c.height=S; const x=c.getContext('2d');
+  x.fillStyle='#4b4b55'; x.fillRect(0,0,S,S); drawSkin(x, S/2, S/2, car, col(name), 0, 1); return c; }
+function rowEl(i, name, sub, right, cls, car){ const d=document.createElement('div'); d.className='row '+(cls||'');
+  d.innerHTML=`<span class="pos">${i}</span><span></span><span class="nm">${name}<small>${sub}</small></span><span class="pts">${right}</span>`;
+  d.children[1].appendChild(icon(car, name)); return d; }
+const tb=document.getElementById('tb');
+function drawSeason(q=''){ tb.innerHTML=''; D.table.forEach((r,i)=>{ if(q && !r.name.toLowerCase().includes(q)) return;
+  tb.appendChild(rowEl(i+1, '@'+r.name, r.carName+' · next: '+r.next, `<b>${r.points}</b><small>${r.wins}W · ${r.podiums}P · ${r.days} days</small>`, i<3?'p'+(i+1):'', r.car)); });
+  if(!D.table.length) tb.innerHTML='<p class="sub">No races yet. The first race is coming!</p>'; }
+drawSeason(); document.getElementById('q').oninput=e=>drawSeason(e.target.value.toLowerCase().replace('@',''));
+const td=document.getElementById('today');
+if(D.day){ td.innerHTML=`<p class="sub">Day ${D.day} · ${D.date}</p>`;
+  D.today.forEach(c=>{ const h=document.createElement('h2'); h.textContent=c.stage; td.appendChild(h);
+    c.rows.forEach(r=>td.appendChild(rowEl(r.pos, r.house?r.name+' <span class=house>(house)</span>':'@'+r.name, r.status==='chegou'?'finished':(r.why||'out').replace('buraco','pothole').replace('quebra','speed bump').replace('poca','oil slick').replace('dog','stray dog').replace('ovo','EGG TRUCK'), '', r.pos<=3&&r.status==='chegou'?'p'+r.pos:'', r.car))); }); }
+const gs=document.getElementById('gp');
+if(D.gp){ gs.innerHTML=`<h2>GP ${D.gp.n} · ${D.gp.phase}</h2><p class="sub">Finalists so far: ${D.gp.finalists.length}/${D.gp.max}. Comment on the latest video to race in the next heat.</p>`;
+  D.gp.finalists.forEach((f,i)=>gs.appendChild(rowEl(i+1,'@'+f.name,'qualified in '+f.heat,'','',f.car)));
+  if(!D.gp.finalists.length) gs.innerHTML+='<p class="sub">No finalists yet. The heats decide who races the GRAND FINAL.</p>'; }
+else gs.innerHTML='<p class="sub">GP 1 starts with the first heat.</p>';
+const cl=document.getElementById('cl');
+D.cars.forEach(c=>{ const d=document.createElement('div'); d.className='car'; d.innerHTML=`<span></span><span><b>${c.name}</b><br>${c.rule}</span>`;
+  d.children[0].appendChild(icon(c.id,'you',true)); cl.appendChild(d); });
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{ document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===b));
+  ['season','gp','today','cars'].forEach(id=>document.getElementById(id).classList.toggle('hide', b.dataset.t!==id)); });
+</script></body></html>
